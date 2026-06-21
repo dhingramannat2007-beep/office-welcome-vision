@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ML model weights (auto-downloaded on first run; too big for git)
+*.pt
+*.onnx
+
+# Known people's photos — biometric/personal data, keep out of version control
+known_faces/
+
+# Editor / OS
+.vscode/
+.DS_Store
+Icon?
+
+# Local env / secrets
+.env

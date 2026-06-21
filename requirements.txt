@@ -1,0 +1,10 @@
+# Office Welcome Vision — Python dependencies
+# Install with:  pip install -r requirements.txt
+
+ultralytics==8.2.103     # YOLOv8 person detection + ByteTrack tracking
+insightface==1.0.1       # face detection + face embeddings (recognition)
+onnxruntime==1.27.0      # runs the InsightFace models
+opencv-python==4.11.0.86 # camera capture, drawing, display windows
+numpy==2.4.6             # vector maths for embeddings
+flask==3.1.0             # tiny web server for the welcome screen
+lapx==0.9.4              # linear-assignment helper required by ByteTrack
