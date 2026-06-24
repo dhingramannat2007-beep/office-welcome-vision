@@ -28,43 +28,44 @@ Real-time people detection, counting, and face-recognition system with a live
 
 ## 2. Architecture overview
 
+Everything inside this flowchart runs inside the single `human_and_face_detection.py`
+file. Boxes are colour-coded by which **thread** they run on (see the table below).
+
+```mermaid
+flowchart TD
+    MAC["find_camera_ip<br/>locate WiFi camera by its MAC"]
+    CAM["Camera<br/>laptop webcam or WiFi RTSP"]
+    FF["FreshestFrame thread<br/>keep only the newest frame"]
+    YOLO["YOLOv8 + ByteTrack<br/>detect and track each person<br/>boxes + stable IDs"]
+    FACE["InsightFace - every Nth frame<br/>recognise faces vs known_faces"]
+    STATE["State + overlays<br/>people count, IDs, names"]
+    WIN["OpenCV window<br/>debug view"]
+    FLASK["Flask web server thread<br/>+ Server-Sent Events"]
+    TV["Chrome tab cast to TV<br/>shows Hello name, welcome"]
+
+    MAC -. finds current IP .-> CAM
+    CAM -- frames --> FF
+    FF -- newest frame --> YOLO
+    YOLO -- boxes + IDs --> FACE
+    YOLO --> STATE
+    FACE -- known name --> STATE
+    STATE --> WIN
+    STATE -- web_greet --> FLASK
+    FLASK -- live push SSE --> TV
+
+    classDef main fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a;
+    classDef grab fill:#dcfce7,stroke:#22c55e,color:#14532d;
+    classDef web fill:#fef9c3,stroke:#eab308,color:#713f12;
+    classDef ext fill:#f3f4f6,stroke:#9ca3af,color:#111827;
+
+    class YOLO,FACE,STATE,WIN main;
+    class FF grab;
+    class FLASK,TV web;
+    class CAM,MAC ext;
 ```
-                          ┌───────────────────────────────────────────────┐
-                          │              human_and_face_detection.py        │
-                          │                                                 │
-   ┌──────────┐  frames   │  ┌───────────────┐   ┌────────────────────┐    │
-   │  Camera  │──────────►│  │ FreshestFrame │──►│  YOLOv8 + ByteTrack │    │
-   │ webcam / │  (RTSP or │  │ (bg thread:   │   │  detect + track     │    │
-   │  WiFi    │   USB)    │  │ newest frame) │   │  each PERSON        │    │
-   └──────────┘           │  └───────────────┘   └─────────┬──────────┘    │
-        ▲                 │                                 │ person boxes   │
-        │ found by MAC    │                       every Nth │ + track IDs    │
-        │ (find_camera_ip)│                         frame   ▼                │
-        │                 │                       ┌────────────────────┐    │
-        │                 │                       │  InsightFace        │    │
-        │                 │                       │  recognise faces    │    │
-        │                 │                       │  vs known_faces/    │    │
-        │                 │                       └─────────┬──────────┘    │
-        │                 │                  known person?  │ name           │
-        │                 │                                 ▼                │
-        │                 │   ┌──────────────┐    ┌────────────────────┐    │
-        │                 │   │ OpenCV window│◄───│  state + overlays  │    │
-        │                 │   │ (debug view) │    │  people count etc. │    │
-        │                 │   └──────────────┘    └─────────┬──────────┘    │
-        │                 │                       web_greet()│ "Hello X"     │
-        │                 │                                 ▼                │
-        │                 │                       ┌────────────────────┐    │
-        │                 │                       │  Flask web server   │    │
-        │                 │                       │  (bg thread) + SSE  │    │
-        │                 │                       └─────────┬──────────┘    │
-        └─────────────────┴─────────────────────────────────┼──────────────┘
-                                                             │ Server-Sent Events
-                                                             ▼
-                                                   ┌────────────────────┐
-                                                   │ Chrome tab (cast)  │
-                                                   │  → TV "Hello X!"   │
-                                                   └────────────────────┘
-```
+
+Legend: blue = main detection thread · green = frame-grabber thread ·
+yellow = web-server thread · grey = things outside the program (camera, TV).
 
 ### Threads (the app runs three at once)
 | Thread | Job |
